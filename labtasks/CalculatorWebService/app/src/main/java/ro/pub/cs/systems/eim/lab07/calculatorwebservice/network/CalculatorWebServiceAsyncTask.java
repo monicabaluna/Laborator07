@@ -82,13 +82,14 @@ public class CalculatorWebServiceAsyncTask extends AsyncTask<String, Void, Strin
                     }
                     content = httpClient.execute(httpPost, responseHandler);
                 default:
-                    return null;
+                    return content;
             }
         } catch (Exception exception) {
             Log.e(Constants.TAG, exception.getMessage());
             if (Constants.DEBUG) {
                 exception.printStackTrace();
             }
+            return null;
         }
         // 2. POST
         // a) build the URL into a HttpPost object
@@ -98,18 +99,13 @@ public class CalculatorWebServiceAsyncTask extends AsyncTask<String, Void, Strin
         // e) execute the request, thus generating the resultHttpPost httpPost = new HttpPost(Constants.POST_WEB_SERVICE_ADDRESS);
 
 
-        return content;
     }
 
     @Override
     protected void onPostExecute(final String result) {
         // display the result in resultTextView
-        resultTextView.post(new Runnable() {
-            @Override
-            public void run() {
-                resultTextView.setText(result);
-            }
-        });
+
+        resultTextView.setText(result);
     }
 
 }
