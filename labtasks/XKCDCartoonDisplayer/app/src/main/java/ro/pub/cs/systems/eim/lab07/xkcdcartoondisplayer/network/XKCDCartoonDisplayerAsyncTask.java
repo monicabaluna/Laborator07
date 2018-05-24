@@ -1,5 +1,7 @@
 package ro.pub.cs.systems.eim.lab07.xkcdcartoondisplayer.network;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
@@ -12,7 +14,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 
-import 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -121,6 +122,38 @@ public class XKCDCartoonDisplayerAsyncTask extends AsyncTask<String, Void, XKCDC
         Element divTagIdCtitle = htmlTag.getElementsByAttributeValue(Constants.ID_ATTRIBUTE, Constants.CTITLE_VALUE).first();
         xkcdCartoonInformation.setCartoonTitle(divTagIdCtitle.ownText());
 
+        Element divTagIdComic = htmlTag.getElementsByAttributeValue(Constants.ID_ATTRIBUTE, Constants.COMIC_VALUE).first();
+        String cartoonInternetAddress = divTagIdComic.getElementsByTag(Constants.IMG_TAG).attr(Constants.SRC_ATTRIBUTE);
+        String cartoonUrl = Constants.HTTP_PROTOCOL + cartoonInternetAddress;
+        xkcdCartoonInformation.setCartoonUrl(cartoonUrl);
+
+        try {
+            HttpGet httpGetCartoon = new HttpGet(cartoonUrl);
+            HttpResponse httpResponse = httpClient.execute(httpGetCartoon);
+            HttpEntity httpEntity = httpResponse.getEntity();
+            if (httpEntity != null) {
+                xkcdCartoonInformation.setCartoonBitmap(BitmapFactory.decodeStream(httpEntity.getContent()));
+            }
+        } catch (ClientProtocolException clientProtocolException) {
+            Log.e(Constants.TAG, clientProtocolException.getMessage());
+            if (Constants.DEBUG) {
+                clientProtocolException.printStackTrace();
+            }
+        } catch (IOException ioException) {
+            Log.e(Constants.TAG, ioException.getMessage());
+            if (Constants.DEBUG) {
+                ioException.printStackTrace();
+            }
+        }
+
+        Element aTagRelPrev = htmlTag.getElementsByAttributeValue(Constants.REL_ATTRIBUTE, Constants.PREVIOUS_VALUE).first();
+        String previousCartoonInternetAddress = Constants.XKCD_INTERNET_ADDRESS + aTagRelPrev.attr(Constants.HREF_ATTRIBUTE);
+        xkcdCartoonInformation.setPreviousCartoonUrl(previousCartoonInternetAddress);
+
+        Element aTagRelNext = htmlTag.getElementsByAttributeValue(Constants.REL_ATTRIBUTE, Constants.NEXT_VALUE).first();
+        String nextCartoonInternetAddress = Constants.XKCD_INTERNET_ADDRESS + aTagRelNext.attr(Constants.HREF_ATTRIBUTE);
+        xkcdCartoonInformation.setNextCartoonUrl(nextCartoonInternetAddress);
+
         return  xkcdCartoonInformation;
     }
 
@@ -135,6 +168,29 @@ public class XKCDCartoonDisplayerAsyncTask extends AsyncTask<String, Void, XKCDC
         // based on cartoonUrl fetch the bitmap using Volley (using an ImageRequest object added to the queue)
         // and put it into xkcdCartoonImageView
         // previousCartoonUrl, nextCartoonUrl -> set the XKCDCartoonUrlButtonClickListener for previousButton, nextButton
+        if (xkcdCartoonInformation == null)
+            return;
+
+        String cartoonTitle = xkcdCartoonInformation.getCartoonTitle();
+        if (cartoonTitle != null) {
+            xkcdCartoonTitleTextView.setText(cartoonTitle);
+        }
+        Bitmap cartoonBitmap = xkcdCartoonInformation.getCartoonBitmap();
+        if (cartoonBitmap != null) {
+            xkcdCartoonImageView.setImageBitmap(cartoonBitmap);
+        }
+        String cartoonUrl = xkcdCartoonInformation.getCartoonUrl();
+        if (cartoonUrl != null) {
+            xkcdCartoonUrlTextView.setText(cartoonUrl);
+        }
+        String previousCartoonUrl = xkcdCartoonInformation.getPreviousCartoonUrl();
+        if (previousCartoonUrl != null) {
+            previousButton.setOnClickListener(new XKCDCartoonButtonClickListener(previousCartoonUrl));
+        }
+        String nextCartoonUrl = xkcdCartoonInformation.getNextCartoonUrl();
+        if (nextCartoonUrl != null) {
+            nextButton.setOnClickListener(new XKCDCartoonButtonClickListener(nextCartoonUrl));
+        }
 
     }
 
